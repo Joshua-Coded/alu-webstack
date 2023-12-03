@@ -33,13 +33,21 @@ defaults
 	errorfile 503 /etc/haproxy/errors/503.http
 	errorfile 504 /etc/haproxy/errors/504.http
 
-frontend myfrontend
-	bind *:80
-	bind *:443 ssl crt /etc/haproxy/certs/www.bamalana.tech.pem
-	default_backend bamalana_backend
+frontend www-http
+    bind *:80
+    mode http
+    default_backend web-backend
+frontend www-https
+    bind *:443 ssl crt /etc/haproxy/www.bamalana.tech.pem
+    http-request set-header X-Forwarded-Proto https
+    acl letsencrypt-acl path_beg /.well-known/acme-challenge/
+    use_backend letsencrypt-backend if letsencrypt-acl
+    default_backend web-backend
 
-backend bamalana_backend
-   balance roundrobin
-    server 5805-web-01 54.226.182.255:80 check
-    server 5805-web-02 34.230.31.69:80 check
-
+backend web-backend
+    redirect scheme https unless { ssl_fc }
+    balance roundrobin
+    server web-01 54.226.182.255:80 check
+    server web-02 34.230.31.69:80 check
+backend letsencrypt-backend
+   server letsencrypt 127.0.0.1:54321
