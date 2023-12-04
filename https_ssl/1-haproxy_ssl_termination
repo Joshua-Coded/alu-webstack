@@ -36,18 +36,14 @@ defaults
 frontend www-http
     bind *:80
     mode http
-    default_backend web-backend
-frontend www-https
-    bind *:443 ssl crt /etc/haproxy/www.bamalana.tech.pem
-    http-request set-header X-Forwarded-Proto https
-    acl letsencrypt-acl path_beg /.well-known/acme-challenge/
-    use_backend letsencrypt-backend if letsencrypt-acl
+    bind *:443 ssl crt /etc/haproxy/certs/www.bamalana.tech.pem
     default_backend web-backend
 
+
 backend web-backend
-    redirect scheme https unless { ssl_fc }
     balance roundrobin
     server web-01 54.226.182.255:80 check
     server web-02 34.230.31.69:80 check
-backend letsencrypt-backend
-   server letsencrypt 127.0.0.1:54321
+    option httpchk GET /
+    option redispatch
+
